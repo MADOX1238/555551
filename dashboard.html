@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar"> 
+  <head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>الصفحة الرئيسية</title> 
+    <style>
+      /* نفس التنسيقات السابقة */
+    </style> 
+  </head> 
+  <body> 
+    <header>
+      الصفحة الرئيسية 
+    </header> 
+    <div class="container" id="main-container"> 
+      <p class="welcome-message">مرحبًا بك في تطبيق Spherely!</p> 
+      <textarea class="input-message" id="message-input" placeholder="اكتب رسالتك هنا..."></textarea> 
+      <button class="publish-message" id="publish-button">نشر الرسالة</button> 
+      <div id="messages-container"> <!-- الرسائل ستظهر هنا --> 
+      </div> 
+      <button class="logout-button" id="logout-button">تسجيل الخروج</button> 
+    </div> 
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+      import { getDatabase, ref, set, push, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+      
+      // إعداد Firebase الأول (القاعدة الأولى)
+      const firebaseConfig1 = {
+        apiKey: "AIzaSyCnHSUo_Vu53NidFWYlQ74_CyOyfVW_BqQ",
+        authDomain: "alaah-8d503.firebaseapp.com",
+        databaseURL: "https://alaah-8d503-default-rtdb.firebaseio.com",
+        projectId: "alaah-8d503",
+        storageBucket: "alaah-8d503.appspot.com",
+        messagingSenderId: "365922482892",
+        appId: "1:365922482892:web:a843fbb3594d200c67e069",
+        measurementId: "G-D4TPJW4RT8"
+      };
+      
+      // إعداد Firebase الثاني (القاعدة الثانية)
+      const firebaseConfig2 = {
+        apiKey: "AIzaSyCe4nIbSuyN6sHEFvfpdRbzyILyr-zVhKo",
+        authDomain: "chat-mad-4ec6d.firebaseapp.com",
+        databaseURL: "https://chat-mad-4ec6d-default-rtdb.firebaseio.com",
+        projectId: "chat-mad-4ec6d",
+        storageBucket: "chat-mad-4ec6d.firebasestorage.app",
+        messagingSenderId: "133266731034",
+        appId: "1:133266731034:web:3540d3b2f20c2e3225a1a3",
+        measurementId: "G-12J0W1SW14"
+      };
+
+      const app1 = initializeApp(firebaseConfig1); // تهيئة التطبيق الأول
+      const app2 = initializeApp(firebaseConfig2, "app2"); // تهيئة التطبيق الثاني
+      const database1 = getDatabase(app1); // قاعدة البيانات الأولى
+      const database2 = getDatabase(app2); // قاعدة البيانات الثانية
+
+      // التحقق إذا كان المستخدم مسجل الدخول
+      if (!sessionStorage.getItem('loggedIn')) {
+        window.location.href = "spherely.html";
+      }
+
+      // Logout functionality
+      document.getElementById('logout-button').addEventListener('click', () => {
+        sessionStorage.removeItem('loggedIn');
+        alert('تم تسجيل الخروج بنجاح!');
+        window.location.href = "spherely.html";
+      });
+
+      // نشر الرسالة
+      document.getElementById('publish-button').addEventListener('click', () => {
+        const message = document.getElementById('message-input').value;
+        const username = sessionStorage.getItem('username'); // أخذ اسم المستخدم من الجلسة
+
+        if (message.trim() !== '') {
+          // نشر الرسالة في قاعدة البيانات الأولى
+          const newMessageKey = push(ref(database1, 'messages')).key;
+          set(ref(database1, 'messages/' + newMessageKey), {
+            username: username,
+            message: message,
+            timestamp: new Date().toISOString()
+          });
+
+          // نقل الرسالة إلى قاعدة البيانات الثانية
+          const newMessageKey2 = push(ref(database2, 'messages')).key;
+          set(ref(database2, 'messages/' + newMessageKey2), {
+            username: username,
+            message: message,
+            timestamp: new Date().toISOString()
+          });
+
+          document.getElementById('message-input').value = ''; // مسح الرسالة بعد نشرها
+        } else {
+          alert('من فضلك أدخل رسالة!');
+        }
+      });
+
+      // استرجاع الرسائل من قاعدة البيانات الأولى (لإظهارها في الصفحة)
+      const messagesContainer = document.getElementById('messages-container');
+      get(ref(database1, 'messages')).then((snapshot) => {
+        if (snapshot.exists()) {
+          snapshot.forEach((childSnapshot) => {
+            const messageData = childSnapshot.val();
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.innerHTML = `
+              <span class="username">${messageData.username}</span>: <span>${messageData.message}</span>
+            `;
+            messagesContainer.appendChild(messageElement);
+          });
+        } else {
+          messagesContainer.innerHTML = 'لا توجد رسائل بعد.';
+        }
+      });
+    </script> 
+  
+</body></html>
